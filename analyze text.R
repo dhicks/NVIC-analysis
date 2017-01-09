@@ -13,23 +13,24 @@ tokens = parsed_site %>%
 	unnest_tokens(token, text)
 token_counts = tokens %>%
 	group_by(path, title, token) %>%
-	summarize(token_n = n()) #%>%
+	summarize(token_n = n()) %>%
+	ungroup() #%>%
 	# bind_tf_idf(term_col = token, document_col = path, n_col = token_n)
 docs = token_counts %>%
 	group_by(path, title) %>%
-	summarize(length = sum(token_n))
+	summarize(length = sum(token_n)) %>%
+	ungroup()
+## Difference between docs and parsed_site due to un-OCRed PDFs
+## ECDF of document length
 ggplot(docs, aes(length)) + stat_ecdf() + geom_rug()
 
-"
-There are a lot of documents that are very short on this run — length 54 or 68 — 
-because they only contain the footer and copyright information.  These docs
-don't have their content in <p> tags, but instead in every other kinds of 
-places.  The comments `<!-- END SOCIAL SHARING -->` and `<!-- start footer -->`
-may be a better way to parse the files.  
-"
-
+## Manually remove some problem documents
 problem_docs = c('BLF-vs--Offit---Plaintiff-s-Opposition-to-Defendan.aspx')
+docs = docs %>% filter(!str_detect(path, problem_docs))
 
+token_counts = token_counts %>%
+	filter(path %in% docs$path) %>%
+	bind_tf_idf(term_col = token, document_col = path, n_col = token_n)
 
 vocabulary = token_counts %>%
 	group_by(token) %>%

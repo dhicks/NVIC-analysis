@@ -44,19 +44,45 @@ parse_file = function (path_to_file) {
 		return(parsed_file)
 	}
 	
-	read_file = read_html(path_to_file)
-	parsed_title = xml_find_all(read_file, '//title') %>% xml_text(trim = TRUE)
-	# print(parsed_title)
-	parsed_text = xml_find_all(read_file, '//p') %>% 
-		xml_text(trim = TRUE) %>%
-		paste(collapse = '\n')
+	## Nice idea — but many pages don't have their content in <p> tags
+	# read_file = read_html(path_to_file)
+	# parsed_title = xml_find_all(read_file, '//title') %>% xml_text(trim = TRUE)
+	# # print(parsed_title)
+	# parsed_text = xml_find_all(read_file, '//p') %>% 
+	# 	xml_text(trim = TRUE) %>%
+	# 	paste(collapse = '\n')
+	read_file = read_file(path_to_file)
+	## Extract title
+	parsed_title = stringi::stri_match_first_regex(read_file, '<title>(.*)</title>', dotall = TRUE)[1,2]
+	## Remove multiline scripts
+	read_file = stringi::stri_replace_all_regex(read_file, '<script[^<]*</script>', '', dotall = TRUE)
+	## Remove other HTML tags
+	read_file = str_replace_all(read_file, '<[^>]*>', '')
+	## Remove HTML escapes
+	read_file = str_replace_all(read_file, '&[a-z]*;', '')
+	
 	parsed_file = tibble(path = path_to_file,
 						 title = parsed_title, 
-						 text = parsed_text)
+						 text = read_file)
 	return(parsed_file)
 }
-# this_file = 'www.nvic.org/vaccine-strain-virus-shedding-and-transmission.aspx'
+
+# Having trouble cleaning out the javascript
+# see https://github.com/tidyverse/stringr/issues/145
+# 
+# this_file = 'www.nvic.org/NVIC-Vaccine-News/April-2014.aspx'
+# read_file = read_file(this_file)
+# results = stringi::stri_replace_all_regex(read_file, '<script[^<]*</script>', '', dotall = TRUE)
+# 
 # parse_file(this_file)
+# 
+# text <- "<em>works</em><div\nid=\"thing\">doesn't work</div>"
+# str_match_all(text, "<.+?>")
+# text <- "<em>matched</em><em>not \n matched</em>"
+# str_match_all(text, "<em>.*</em>")
+# text <- "<em>matched</em><em>not \n matched</em>"
+# str_match_all(text, regex("<em>.*</em>", multiline = TRUE))
+
 
 parse_folder = function(this_folder) {
 	files_here = list.files(this_folder)
@@ -74,7 +100,7 @@ parse_folder = function(this_folder) {
 		parsed_subfolders = lapply(dirs_here, parse_folder) %>% bind_rows()
 		parsed = bind_rows(parsed, parsed_subfolders)
 	}
-	
+
 	return(parsed)
 }
 
