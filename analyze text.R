@@ -52,3 +52,13 @@ dtm = token_counts %>%
 ## Use this instead: http://stackoverflow.com/a/29755756/3187973
 library(slam)
 cosine_sim_dtm <- crossprod_simple_triplet_matrix(t(dtm))/(sqrt(row_sums(dtm^2) %*% t(row_sums(dtm^2))))
+
+library(apcluster)
+clustered = apcluster(cosine_sim_dtm, details = TRUE, q = .5)
+clustered
+## Uncommon to generate a Tikz version
+# tikzDevice::tikz(width = 12, height = 12, file = 'cluster_heatmap.tex', 
+# 				 standAlone = TRUE, sanitize = TRUE)
+heatmap(clustered, cosine_sim_dtm)
+# dev.off()
+
