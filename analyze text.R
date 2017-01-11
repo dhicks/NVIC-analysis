@@ -8,6 +8,9 @@ load('www.nvic.org.Rdata')
 parsed_site = parsed_site %>% 
 	filter(!is.na(title), !is.na(text))
 
+## For development purposes, work with a much smaller set of documents
+# parsed_site = parsed_site %>% sample_frac(size = .25)
+
 ## The simplest way to get a count of document lengths is to go through token_counts once first? 
 tokens = parsed_site %>%
 	unnest_tokens(token, text)
