@@ -39,8 +39,16 @@ vocabulary = token_counts %>%
 	group_by(token) %>%
 	summarize(idf = first(idf), 
 			  tf_idf = max(tf_idf))
+ggplot(vocabulary, aes(idf, tf_idf)) + geom_point() + stat_smooth()
 ggplot(vocabulary, aes(idf)) + stat_ecdf()
 ggplot(vocabulary, aes(tf_idf)) + stat_ecdf()
 
-token_counts %>%
-	filter(!str_detect(token, '[0-9]'))
+
+
+dtm = token_counts %>%
+	filter(tf_idf >= quantile(vocabulary$tf_idf, probs = .8)) %>%
+	cast_dtm(path, token, token_n)
+# dist = proxy::dist(as.matrix(tdm), method = 'cosine')
+## Use this instead: http://stackoverflow.com/a/29755756/3187973
+library(slam)
+cosine_sim_dtm <- crossprod_simple_triplet_matrix(t(dtm))/(sqrt(row_sums(dtm^2) %*% t(row_sums(dtm^2))))
